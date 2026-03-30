@@ -1,0 +1,30 @@
+# === VS Code 本地配置 ===
+.vscode/settings.json.user
+.vscode/.history/
+.vscode/.tasklists/
+.vscode/launch.json
+.vscode/tasks.json
+
+# === Unity 生成/缓存文件 (你的项目是Unity) ===
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/Assets/[Aa]ssets/AssetBundle/
+/Assets/[Aa]ssets/AssetStoreTemp/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+
+# === 系统垃圾 ===
+.DS_Store
+Thumbs.db
+*.log
