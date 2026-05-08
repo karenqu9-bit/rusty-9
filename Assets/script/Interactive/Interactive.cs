@@ -6,8 +6,9 @@ public class Interactive : MonoBehaviour
 {
     public ItemName requireItem;
     public bool isDone;
+    
 
-    public void CheckItem(ItemName itemName)
+    public virtual void CheckItem(ItemName itemName)
     {
         if (itemName == requireItem && !isDone)
         {

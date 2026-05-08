@@ -9,14 +9,28 @@ public class TransitionManager : Singleton<TransitionManager>
     public CanvasGroup fadeCanvasGroup;
     public float fadeDuration;
     private bool isFade;
+    private bool canTransition;
+    private void OnEnable()
+    {
+        EventHandler.GameStateChangeEvent += OnGameStateChangeEvent;
+    }
 
+    private void OnDisable()
+    {
+        EventHandler.GameStateChangeEvent -= OnGameStateChangeEvent;
+    }
     private void Start()
     {
         StartCoroutine(TransitionToScene(string.Empty, startScene));
     }
+
+    private void OnGameStateChangeEvent(GameState gameState)
+    {
+        canTransition = gameState == GameState.GamePlay;
+    }
     public void Transition(string from, string to)
     {
-        if (!isFade)
+        if (!isFade && canTransition)
             StartCoroutine(TransitionToScene(from, to));
     }
 

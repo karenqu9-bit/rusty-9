@@ -31,4 +31,28 @@ public static class EventHandler
     {
         ItemUsedEvent?.Invoke(itemName);
     }
+    public static event Action<int> ChangeItemEvent;
+    public static void CallChangeItemEvent(int index)
+    {
+        ChangeItemEvent?.Invoke(index);
+    }
+
+    public static event Action<string> ShowDialogueEvent;
+    public static void CallShowDialogueEvent(string dialogue)
+    {
+        ShowDialogueEvent?.Invoke(dialogue);
+    }
+    public static event Action<GameState> GameStateChangeEvent;
+    public static void CallGameStateChangeEvent(GameState gameState)
+    {
+        GameStateChangeEvent?.Invoke(gameState);
+    }
+        // 【新增】当玩家向 NPC 给予物品时触发
+    // 参数：给予的物品名称
+    public static event Action<ItemName> OnItemGivenToNPCEvent;
+
+    public static void CallItemGivenToNPCEvent(ItemName itemName)
+    {
+        OnItemGivenToNPCEvent?.Invoke(itemName);
+    }
 }
