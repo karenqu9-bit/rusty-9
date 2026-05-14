@@ -14,6 +14,7 @@ public class ItemTooltip : MonoBehaviour
             ItemName.Bear =>"玩具小熊",
             ItemName.Glass =>"隐形眼镜液",
             ItemName.Mask =>"面具",
+            ItemName.Doll =>"鬼娃娃",
             _=>""
         };
     }

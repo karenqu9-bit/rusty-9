@@ -1,6 +1,6 @@
 public enum ItemName
 {
-    None, Bear, Glass, Mask
+    None, Bear, Glass, Mask, Doll
 }
 
 public enum GameState

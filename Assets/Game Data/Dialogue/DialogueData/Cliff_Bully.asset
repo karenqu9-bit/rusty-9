@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dialogueList:
   - "\"\u6211\u8BA8\u538C\u4F60\u626E\u6F14\u7684\u5927\u7329\u7329\uFF0C\u6211\u771F\u7684\u5F88\u5BB3\u6015\uFF0C\u4ED6\u4EEC\u90FD\u5728\u5632\u7B11\u6211\uFF0C\u6211\u8FD8\u4E0D\u5982\u8DF3\u8FDB\u6C34\u91CC\u6B7B\u4E86\u597D...\""
+  dialogueSound: {fileID: 8300000, guid: 853ec28e4dd5d124ab520e8350b54028, type: 3}

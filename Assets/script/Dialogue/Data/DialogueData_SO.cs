@@ -6,4 +6,6 @@ using UnityEngine;
 public class DialogueData_SO : ScriptableObject
 {
     public List<string> dialogueList;
+        // 【新增】为该段对话专属的音效
+    public AudioClip dialogueSound;
 }
