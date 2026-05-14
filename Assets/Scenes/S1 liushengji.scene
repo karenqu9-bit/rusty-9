@@ -427,7 +427,13 @@ MonoBehaviour:
   isDone: 0
   holdingDollSprite: {fileID: 21300000, guid: c72813c555f39704b8cf3eb0622c6425, type: 3}
   emptyHandedSprite: {fileID: 21300000, guid: 34760d25e4c848d4cafd0a15420b2dba, type: 3}
+  sideSprite: {fileID: 21300000, guid: 017bfcd02c9712440864f74dda1b68fb, type: 3}
   openSprite: {fileID: 21300000, guid: c6c16d745a0a53f41b6b3516a3a12860, type: 3}
+  sidePositionX: 3
+  openPositionX: 6
+  fadeDuration: 0.6
+  minAlpha: 0.32
+  maxAlpha: 1
 --- !u!114 &360336915
 MonoBehaviour:
   m_ObjectHideFlags: 0
