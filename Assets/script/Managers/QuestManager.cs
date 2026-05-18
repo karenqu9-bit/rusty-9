@@ -12,6 +12,15 @@ public class QuestManager : MonoBehaviour
     public bool isTalbertDone { get; private set; } = false;
     public bool isGemmaGone { get; private set; } = false;
 
+    // 在 QuestManager.cs 中添加
+    public bool isDollTaken { get; private set; } = false;
+
+    // 新增公开方法，供 TalbertS1 调用
+    public void SetDollTaken()
+    {
+        isDollTaken = true;
+    }
+
     private void Awake()
     {
         // 单例模式标准写法
