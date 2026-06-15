@@ -5,6 +5,9 @@ using UnityEngine.SceneManagement;
 
 public class TransitionManager : Singleton<TransitionManager>
 {
+    [Header("UI Elements")]
+    public GameObject startText; // 拖入开始文本的引用
+
     [SceneName] public string startScene;
     public CanvasGroup fadeCanvasGroup;
     public float fadeDuration;
@@ -25,7 +28,6 @@ public class TransitionManager : Singleton<TransitionManager>
     private void Start()
     {
         // 【关键】确保当前物体上有 AudioSource，如果没有则自动添加
-        // 放在 Start 里确保基类 Awake 已经执行完毕
         if (!TryGetComponent(out audioSource))
         {
             audioSource = gameObject.AddComponent<AudioSource>();
@@ -33,11 +35,40 @@ public class TransitionManager : Singleton<TransitionManager>
 
         // 配置 AudioSource 属性
         audioSource.playOnAwake = false;
-        audioSource.spatialBlend = 0; // 2D 声音，不受距离影响
+        audioSource.spatialBlend = 0;
 
-        // 开始初始场景过渡
-        StartCoroutine(TransitionToScene(string.Empty, startScene));
+        // 显示开始文本
+        if (startText != null)
+        {
+            startText.SetActive(true);
+        }
+
+        // 开始初始场景过渡 - 改为加载开始场景
+        StartCoroutine(TransitionToScene(string.Empty, "StartScene"));
     }
+    private void Update()
+    {
+        // 检测用户是否点击或触摸屏幕
+        if (Input.GetMouseButtonDown(0) || Input.touchCount > 0)
+        {
+            // 获取当前场景名称
+            string currentScene = SceneManager.GetActiveScene().name;
+
+            // 如果是在开始场景，则开始游戏
+            if (currentScene == "StartScene")
+            {
+                // 隐藏开始文本
+                if (startText != null)
+                {
+                    startText.SetActive(false);
+                }
+
+                // 开始游戏场景过渡
+                StartCoroutine(TransitionToScene("StartScene", startScene));
+            }
+        }
+    }
+
 
     private void OnEnable()
     {
