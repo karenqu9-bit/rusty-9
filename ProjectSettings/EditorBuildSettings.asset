@@ -29,6 +29,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/S7 Key.scene
     guid: 1bea2b6934436254a86be2126eb8740f
+  - enabled: 1
+    path: Assets/Scenes/StartScene.scene
+    guid: 0afdb473f432b0d43ba1ddffb00ca7a5
   m_BuildProfiles: []
   m_configObjects: {}
   m_SlimFeaturesWeixinMiniGame:
