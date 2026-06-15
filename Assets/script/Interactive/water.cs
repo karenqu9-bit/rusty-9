@@ -9,17 +9,23 @@ public class S4FinalTrigger : MonoBehaviour
 
     private void OnMouseDown()
     {
-        // 1. 检查前置条件：必须完成前三个任务
-        if (QuestManager.Instance == null || !QuestManager.Instance.AreAllTasksCompleted())
+        if (QuestManager.Instance == null)
         {
-            Debug.Log("[S4Trigger] Tasks not completed yet.");
+            Debug.LogError("[S4Trigger] QuestManager Instance is null!");
             return;
         }
+
+        if (!QuestManager.Instance.AreAllTasksCompleted())
+        {
+            Debug.Log($"[S4Trigger] Tasks not completed yet. Cliff: {QuestManager.Instance.isCliffDone}, Amanda: {QuestManager.Instance.isAmandaDone}, Talbert: {QuestManager.Instance.isTalbertDone}");
+            return;
+        }
+
 
         // 2. 检查是否已经触发过（避免重复执行）
         if (QuestManager.Instance.IsFinalStageReached())
         {
-            return; 
+            return;
         }
 
         TriggerFinalSequence();
@@ -40,8 +46,11 @@ public class S4FinalTrigger : MonoBehaviour
         else
         {
             // 如果没在 Inspector 赋值，尝试自动查找
-            GameObject foundGemma = GameObject.Find("Gemma"); // 假设 Gemma 物体名字叫 "Gemma"
-            if (foundGemma != null) foundGemma.SetActive(false);
+            GameObject foundGemma = GameObject.Find("Gemma");
+            if (foundGemma != null)
+            {
+                foundGemma.SetActive(false);
+            }
         }
 
         // 5. 切换背景到 Final BG
@@ -51,4 +60,7 @@ public class S4FinalTrigger : MonoBehaviour
             bgController.UpdateBackground();
         }
     }
+
 }
+
+

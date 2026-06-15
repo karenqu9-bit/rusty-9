@@ -2,11 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class DialogueUI : MonoBehaviour
 {
     public GameObject panel;
-    public Text dialogueText;
+    public TMP_Text dialogueText;
     
     // 记录初始位置作为默认位置
     private Vector2 defaultPosition;

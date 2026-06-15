@@ -8,7 +8,27 @@ public class QuestManager : MonoBehaviour
 
     // 任务状态标记
     public bool isCliffDone { get; private set; } = false;
+    public bool isTalbertRoutineDone { get; set; } = false;
+    // 在 QuestManager.cs 中添加
+
+    // 【新增】电话任务完成标记
+    public bool isPhoneDone { get; private set; } = false;
+
+    // 新增公开方法，供 TalbertS1 调用
+
+    // 【新增】电话打通方法
+    public void SetPhoneDone()
+    {
+        isPhoneDone = true;
+    }
+
+    public void SetTalbertRoutineDone()
+    {
+        isTalbertRoutineDone = true;
+    }
     public bool isAmandaDone { get; private set; } = false;
+    public bool isGemmaPermanentlyGone { get; private set; } = false;
+
     public bool isTalbertDone { get; private set; } = false;
     public bool isGemmaGone { get; private set; } = false;
 
@@ -57,10 +77,13 @@ public class QuestManager : MonoBehaviour
                 break;
             case ItemName.Mask:
                 isAmandaDone = true;
+                // 【删除】 EventHandler.CallRewardEvent(ItemName.EmptyCase); 
+                // 现在不需要在这里触发任何事件，UnlockableItem 脚本会自己监听 OnItemGivenToNPCEvent
                 break;
-            case ItemName.Glass:
+            case ItemName.FullCase:
                 isTalbertDone = true;
                 break;
+
         }
 
         // 可选：如果所有任务都完成了，可以立即触发某些全局效果
@@ -75,11 +98,10 @@ public class QuestManager : MonoBehaviour
     public void SetGemmaGone()
     {
         isGemmaGone = true;
+        isGemmaPermanentlyGone = true; // 永久消失
         Debug.Log("[QuestManager] Gemma has disappeared.");
-
-        // 如果需要，这里也可以触发一个事件通知其他物体
-        // EventHandler.CallGemmaDisappearedEvent(); 
     }
+
 
     public bool AreAllTasksCompleted()
     {

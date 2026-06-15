@@ -23,6 +23,7 @@ public class TalbertS1 : Interactive
     public float maxAlpha = 1.0f;          // 【新增】最高透明度
 
     private Vector3 initialPosition;       // 记录初始位置
+    private bool isAnimating = false;
 
     private void Awake()
     {
@@ -55,6 +56,7 @@ public class TalbertS1 : Interactive
     // 【核心】根据全局状态决定显示哪张图、在什么位置
     private void UpdateSpriteBasedOnState()
     {
+        if (isAnimating) return;
         if (IsInvoking()) return;
 
         if (isDone)
@@ -143,7 +145,7 @@ public class TalbertS1 : Interactive
             UpdateSpriteBasedOnState();
 
             // 2. 如果当前手持的是 Glass，继续执行给玻璃水的逻辑
-            if (itemName == ItemName.Glass)
+            if (itemName == ItemName.FullCase)
             {
                 StartCoroutine(PlayGlassSequence());
             }
@@ -164,7 +166,7 @@ public class TalbertS1 : Interactive
         }
 
         // 正常处理其他物品逻辑
-        if (itemName == ItemName.Glass)
+        if (itemName == ItemName.FullCase)
         {
             StartCoroutine(PlayGlassSequence());
         }
@@ -195,8 +197,17 @@ public class TalbertS1 : Interactive
     // 【新增】处理给予 Glass 的完整动画序列
     private IEnumerator PlayGlassSequence()
     {
+        isAnimating = true;
+        // 1. 【关键】锁定场景切换：将游戏状态设为 Pause (或其他非 GamePlay 状态)
+        // 这样 TransitionManager 的 canTransition 会变为 false
+        EventHandler.CallGameStateChangeEvent(GameState.Pause);
         // 1. 消耗物品
-        EventHandler.CallItemUsedEvent(ItemName.Glass);
+        EventHandler.CallItemUsedEvent(ItemName.FullCase);
+        // 3. 立即记录全局状态并触发事件
+        if (QuestManager.Instance != null)
+        {
+            QuestManager.Instance.SetTalbertRoutineDone();
+        }
 
         // --- 第一阶段：Empty Handed (左/原位) -> Side Sprite (中/右移) ---
 
@@ -227,8 +238,13 @@ public class TalbertS1 : Interactive
 
         // --- 结束 ---
         isDone = true;
-        EventHandler.CallItemGivenToNPCEvent(ItemName.Glass);
+        EventHandler.CallItemGivenToNPCEvent(ItemName.FullCase);
         dialogueController.ShowDialogueFinish();
+        // 3. 【关键】解锁场景切换：恢复游戏状态为 GamePlay
+        EventHandler.CallGameStateChangeEvent(GameState.GamePlay);
+
+
+        isAnimating = false;
     }
 
     // 【修改】协程：改变透明度到目标值 (通用方法)
@@ -254,4 +270,5 @@ public class TalbertS1 : Interactive
         if (toastMgr != null) toastMgr.ShowToast(message);
         else Debug.Log($"[Hint] {message}");
     }
+
 }

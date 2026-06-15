@@ -2,24 +2,19 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+
 public class InventoryManager : Singleton<InventoryManager>
 {
     public ItemDataList_SO itemData;
     [SerializeField] private List<ItemName> itemList = new List<ItemName>();
 
-    // 【核心状态】记录当前在背包UI中被“选中”的物品
-    private ItemName selectedItemName = ItemName.None;
+    private ItemName currentHeldItem = ItemName.None;
+    private bool isProcessing = false;
 
     private void OnEnable()
     {
-        // 1. 监听背包点击：用于更新 selectedItemName
         EventHandler.ItemSelectedEvent += OnItemSelectedEvent;
-
-        // 2. 监听交互/使用事件：用于触发移除逻辑
-        // 无论是点击场景物体(Cliff)还是其他使用行为，都会触发这个
         EventHandler.ItemUsedEvent += OnItemUsedEvent;
-
-        EventHandler.ChangeItemEvent += OnChangeItemEvent;
         EventHandler.AfterSceneLoadedEvent += OnAfterSceneLoadedEvent;
     }
 
@@ -27,145 +22,197 @@ public class InventoryManager : Singleton<InventoryManager>
     {
         EventHandler.ItemSelectedEvent -= OnItemSelectedEvent;
         EventHandler.ItemUsedEvent -= OnItemUsedEvent;
-        EventHandler.ChangeItemEvent -= OnChangeItemEvent;
         EventHandler.AfterSceneLoadedEvent -= OnAfterSceneLoadedEvent;
     }
 
+
+
+
     private void OnAfterSceneLoadedEvent()
     {
-        // 【修改】不再直接重置为 None
-        // 检查之前选中的物品是否还在当前场景的背包列表中
-        if (selectedItemName != ItemName.None && HasItem(selectedItemName))
-        {
-            // 如果还在，找到它的索引并重新触发 UI 更新，保持选中状态
-            int index = GetItemIndex(selectedItemName);
-            if (index != -1)
-            {
-                EventHandler.CallChangeItemEvent(index);
-                Debug.Log($"[Manager] Scene loaded. Restoring selection: {selectedItemName}");
-            }
-        }
-        else
-        {
-            // 如果之前选中的物品不在了（比如被消耗了或没带过来），则重置
-            selectedItemName = ItemName.None;
-            RefreshAllUI();
-            Debug.Log("[Manager] Scene loaded. Selection reset because item is missing.");
-        }
+        // 场景加载后，刷新整个背包UI
+        RefreshAllUI();
     }
 
-    private void RefreshAllUI()
+    // 【重构】刷新所有UI：通知UI层重新渲染所有槽位
+    public void RefreshAllUI()
     {
-        if (itemList.Count == 0)
-        {
-            EventHandler.CallUpdateUIEvent(null, -1);
-        }
-        else
-        {
-            for (int i = 0; i < itemList.Count; i++)
-            {
-                EventHandler.CallUpdateUIEvent(itemData.GetItemDetails(itemList[i]), i);
-            }
-            if (itemList.Count > 0)
-                EventHandler.CallChangeItemEvent(0);
-        }
+        // 调用 UI 层的刷新方法，传入整个列表
+        // 假设我们在 InventoryUI 中增加了一个新方法 CallRefreshInventory
+        EventHandler.CallRefreshInventoryEvent(itemList);
     }
 
-    private void OnChangeItemEvent(int index)
-    {
-        if (itemList.Count == 0)
-        {
-            EventHandler.CallUpdateUIEvent(null, -1);
-            return;
-        }
-
-        if (index >= 0 && index < itemList.Count)
-        {
-            ItemDetails item = itemData.GetItemDetails(itemList[index]);
-            EventHandler.CallUpdateUIEvent(item, index);
-
-            // 左右切换时，也更新选中状态，但不触发移除
-            selectedItemName = itemList[index];
-        }
-    }
-
-    // 【逻辑A】处理背包UI点击：只负责记录“谁被选中了”，不负责移除
+    // 【核心重构】处理物品选中逻辑
     private void OnItemSelectedEvent(ItemDetails itemDetails, bool isSelected)
     {
-        if (!isSelected || itemDetails == null)
-        {
-            selectedItemName = ItemName.None;
-            Debug.Log("[Manager] Deselected item in UI.");
-            return;
-        }
+        // 1. 如果正在处理切换逻辑，直接忽略所有传入的事件（防止递归）
+        if (isProcessing) return;
 
-        // 更新选中状态
-        selectedItemName = itemDetails.itemName;
-        Debug.Log($"[Manager] Item Selected in UI: {selectedItemName}. Waiting for interaction to use/remove it.");
+        if (isSelected && itemDetails != null)
+        {
+            ItemName clickedItemName = itemDetails.itemName;
+
+            // 情况1：当前手里没东西 -> 拿起
+            if (currentHeldItem == ItemName.None)
+            {
+                currentHeldItem = clickedItemName;
+                Debug.Log($"[Manager] Picked up: {clickedItemName}");
+            }
+            // 情况2：手里有东西，且点击的是同一个 -> 放下
+            else if (currentHeldItem == clickedItemName)
+            {
+                currentHeldItem = ItemName.None;
+                Debug.Log($"[Manager] Put down: {clickedItemName}");
+            }
+            // 情况3：手里有东西，且点击了不同的物品 -> 尝试切换/合成
+            else
+            {
+                ItemName oldHeldItem = currentHeldItem;
+                Debug.Log($"[Manager] Switching from {oldHeldItem} to {clickedItemName}");
+
+                // --- 开始原子操作 ---
+                isProcessing = true;
+
+                // 【关键修复】在切换前，先强制通知所有 UI “放下” 当前手持的物品
+                // 这能确保 SlotUI 里的 isSelected 被重置为 false
+                ItemDetails oldDetails = GetItemDetails(oldHeldItem);
+                if (oldDetails != null)
+                {
+                    EventHandler.CallItemSelectedEvent(oldDetails, false);
+                }
+
+                // 1. 更新内部状态为新物品
+                currentHeldItem = clickedItemName;
+
+                // 2. 判断是否合成
+                if (TryCombineItems(currentHeldItem, oldHeldItem))
+                {
+                    Debug.Log("[Manager] Combine Success!");
+
+                    // 合成成功：清空手
+                    currentHeldItem = ItemName.None;
+
+                    // 刷新背包列表（这会重建所有 SlotUI，彻底清除残留状态）
+
+
+                    // 确保 Cursor 隐藏
+                    EventHandler.CallItemSelectedEvent(null, false);
+                    HideTooltipIfEmpty();
+
+                    RefreshAllUI();
+                    StartCoroutine(ForceHideTooltipNextFrame());
+                }
+                else
+                {
+                    Debug.Log($"[Manager] Combine Failed. Keeping {clickedItemName} in hand.");
+
+                    // 合成失败：现在旧物品已经被上面的代码“放下”了
+                    // 我们只需要通知新物品“被拿起”
+                    // 注意：这里触发 true 事件，SlotUI 会把自己的 isSelected 设为 true
+                    EventHandler.CallItemSelectedEvent(itemDetails, true);
+                }
+
+                // --- 结束原子操作 ---
+                isProcessing = false;
+
+                return;
+            }
+        }
+        else if (!isSelected)
+        {
+            // 处理放下的逻辑
+            if (itemDetails != null && itemDetails.itemName == currentHeldItem)
+            {
+                currentHeldItem = ItemName.None;
+            }
+        }
     }
 
-    // 【逻辑B】处理交互/使用：当发生交互时，检查是否有“选中物品”，如果有则移除
+    private System.Collections.IEnumerator ForceHideTooltipNextFrame()
+    {
+        yield return null; // 等待一帧，让 InventoryUI 完成实例化和布局
+        if (ItemTooltip.Instance != null)
+        {
+            ItemTooltip.Instance.gameObject.SetActive(false);
+        }
+
+        // 如果还不放心，可以再等一帧确认
+        yield return null;
+        if (ItemTooltip.Instance != null)
+        {
+            ItemTooltip.Instance.gameObject.SetActive(false);
+        }
+    }
+
     private void OnItemUsedEvent(ItemName itemName)
     {
-        Debug.Log($"[Manager] Interaction/Use Event Triggered by: {itemName}");
+        Debug.Log($"[Manager] Item Used Event Received: {itemName}");
 
-        // 【关键判断】
-        // 如果当前有一个“被选中”的物品（比如小熊），且它还在背包里
-        if (selectedItemName != ItemName.None && HasItem(selectedItemName))
+        // 如果使用的是当前手持的物品，也要清空手持状态
+        if (currentHeldItem == itemName)
         {
-            Debug.Log($"[Manager] Removing previously selected item: {selectedItemName} because of interaction with {itemName}");
-
-            // 移除选中的物品（小熊）
-            RemoveItemByName(selectedItemName);
-
-            // 重置选中状态，防止重复移除
-            selectedItemName = ItemName.None;
+            currentHeldItem = ItemName.None;
+            HideTooltipIfEmpty();
         }
-        else
-        {
-            Debug.Log("[Manager] No item was selected in inventory, or selected item no longer exists. Nothing removed from inventory.");
-        }
+
+        // 从背包中移除该物品
+        RemoveItemByName(itemName);
     }
 
-    private void RemoveItemByName(ItemName itemName)
+    /// <summary>
+    /// 尝试将 heldItem 使用在 targetItem 上
+    /// 返回 true 表示成功消耗并改变了物品，false 表示无操作
+    /// </summary>
+    /// 
+    private bool TryCombineItems(ItemName newItem, ItemName oldItem)
+    {
+        // 配方：Glass + EmptyCase -> FullCase
+        bool isMatch = (newItem == ItemName.Glass && oldItem == ItemName.EmptyCase) ||
+                       (newItem == ItemName.EmptyCase && oldItem == ItemName.Glass);
+
+        if (isMatch)
+        {
+            // 1. 移除旧物品
+            int index1 = GetItemIndex(newItem);
+            if (index1 != -1) itemList.RemoveAt(index1);
+
+            int index2 = GetItemIndex(oldItem);
+            if (index2 != -1) itemList.RemoveAt(index2);
+
+            // 2. 添加新物品
+            if (!itemList.Contains(ItemName.FullCase))
+            {
+                itemList.Add(ItemName.FullCase);
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+
+    public void RemoveItemByName(ItemName itemName)
     {
         var index = GetItemIndex(itemName);
         if (index != -1)
         {
             itemList.RemoveAt(index);
-            RefreshAllUI();
+            RefreshAllUI(); // 移除后刷新列表
         }
     }
 
     public void AddItem(ItemName itemName)
     {
-        // 1. 检查是否已存在（根据你的游戏设计，如果需要堆叠请修改此逻辑）
         if (!itemList.Contains(itemName))
         {
             itemList.Add(itemName);
-
-            // 2. 获取新加入物品的索引（即列表最后一个元素的索引）
-            int newIndex = itemList.Count - 1;
-
-            Debug.Log($"[Manager] Item Added: {itemName} at index {newIndex}");
-
-            // 3. 【关键】直接更新 UI 显示这个新物品，并选中它
-            // 这样就不会像 RefreshAllUI 那样重置到索引 0
-
-            // A. 通知 UI 更新该槽位的数据（显示图片等）
-            ItemDetails newitemDetails = itemData.GetItemDetails(itemName);
-            EventHandler.CallUpdateUIEvent(newitemDetails, newIndex);
-
-            /*
-            // B. 通知 UI 切换选中项到这个新物品（高亮、更新按钮状态）
-            EventHandler.CallChangeItemEvent(newIndex);
-            */
-            Debug.Log($"[Manager] Keeping current selection. New item added to slot {newIndex}.");
+            RefreshAllUI(); // 添加后刷新列表
+            Debug.Log($"[Manager] Item Added: {itemName}");
         }
         else
         {
             Debug.Log($"[Manager] Item {itemName} already exists.");
-            // 如果允许堆叠，这里可以处理数量增加逻辑
         }
     }
 
@@ -187,5 +234,34 @@ public class InventoryManager : Singleton<InventoryManager>
     public int GetItemCount()
     {
         return itemList.Count;
+    }
+
+    // 辅助方法：获取物品详情
+    // 【新增】提供公共接口供 UI 层获取当前物品列表
+    public List<ItemName> GetItemList()
+    {
+        return itemList;
+    }
+
+    // 辅助方法：获取物品详情
+    public ItemDetails GetItemDetails(ItemName itemName)
+    {
+        return itemData.GetItemDetails(itemName);
+    }
+
+    // 【新增】获取当前手持物品，供 CursorManager 或其他系统查询
+    public ItemName GetCurrentHeldItem()
+    {
+        return currentHeldItem;
+    }
+    private void HideTooltipIfEmpty()
+    {
+        if (currentHeldItem == ItemName.None)
+        {
+            if (ItemTooltip.Instance != null)
+            {
+                ItemTooltip.Instance.gameObject.SetActive(false);
+            }
+        }
     }
 }

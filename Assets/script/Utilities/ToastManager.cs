@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using TMPro; // 引入 TMP 命名空间
 
 public class ToastManager : MonoBehaviour
 {
@@ -8,7 +9,7 @@ public class ToastManager : MonoBehaviour
 
     [Header("UI References")]
     public GameObject toastPanel; // 拖入 ToastPanel
-    public Text toastText;        // 拖入 ToastText (如果是TMP，改为 TMPro.TextMeshProUGUI)
+    public TMP_Text toastText;         // 拖入 ToastText (如果是TMP，改为 TMPro.TextMeshProUGUI)
 
     [Header("Settings")]
     public float displayDuration = 2f; // 显示时长

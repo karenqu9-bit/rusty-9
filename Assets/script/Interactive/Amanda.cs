@@ -58,11 +58,13 @@ public class Amanda : Interactive
 
     protected override void OnclickedAction()
     {
+        Debug.Log("[Amanda] OnclickedAction Triggered! Calling Event..."); // 【新增】
         // 【关键】在显示对话前，先设置位置
         SetDialoguePosition();
 
         dialogueController.ShowDialogueFinish();
         EventHandler.CallItemGivenToNPCEvent(ItemName.Mask);
+        Debug.Log("[Amanda] Event Called with ItemName.Mask");
     }
 
     // 【新增】封装设置位置的方法，避免重复代码
