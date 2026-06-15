@@ -15,6 +15,7 @@ public class TransitionManager : Singleton<TransitionManager>
 
     private bool isFade;
     private bool canTransition;
+    private bool isFirstLoad = true; // 新增：标记是否是第一次加载场景
 
     // 【新增】私有 AudioSource 引用
     private AudioSource audioSource;
@@ -62,7 +63,15 @@ public class TransitionManager : Singleton<TransitionManager>
     private IEnumerator TransitionToScene(string from, string to)
     {
         // 【新增】在开始淡出（变黑）时播放脚步声
-        PlayFootsteps();
+        // 只有不是第一次加载时才播放脚步声
+        if (!isFirstLoad)
+        {
+            PlayFootsteps();
+        }
+        else
+        {
+            isFirstLoad = false; // 标记第一次加载已完成
+        }
 
         yield return Fade(1);
 
@@ -84,7 +93,8 @@ public class TransitionManager : Singleton<TransitionManager>
     // 【新增】播放脚步声的方法
     private void PlayFootsteps()
     {
-        if (footstepClip != null && audioSource != null)
+        // 添加额外的空值检查
+        if (footstepClip != null && audioSource != null && audioSource.isActiveAndEnabled)
         {
             audioSource.PlayOneShot(footstepClip);
         }
